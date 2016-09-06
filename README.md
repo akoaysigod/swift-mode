@@ -1,5 +1,7 @@
 [![License GPL 3][badge-license]][copying]
 [![Build Status][badge-travis]][travis]
+[![MELPA](https://melpa.org/packages/swift-mode-badge.svg)](https://melpa.org/#/swift-mode)
+[![MELPA stable](https://stable.melpa.org/packages/swift-mode-badge.svg)](https://stable.melpa.org/#/swift-mode)
 
 # swift-mode
 
@@ -15,7 +17,7 @@ Major-mode for Apple's [Swift programming language][swift]. Provides:
 This is currently at an early stage of development and there's plenty of work to
 do. Check the issue tracker.
 
-Requires Emacs 24 or later.
+Requires Emacs 24.4 or later.
 
 ## Installing
 
@@ -33,7 +35,7 @@ might be unstable (albeit rarely).
 You can add MELPA to the list of `package.el` repositories like this:
 
 ```el
-(add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/"))
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 ```
 
 #### MELPA Stable
@@ -44,7 +46,7 @@ You can install the last stable version of `swift-mode` from the
 You can add MELPA Stable to the list of `package.el` repositories like this:
 
 ```el
-(add-to-list 'package-archives '("melpa-stable" . "http://melpa-stable.milkbox.net/packages/"))
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/"))
 ```
 
 ***
@@ -101,10 +103,13 @@ Thanks to the following users for their contributions:
 - [@bbatsov](https://github.com/bbatsov) (Bozhidar Batsov)
 - [@ckruse](https://github.com/ckruse) (Christian Kruse)
 - [@syohex](https://github.com/syohex) (Syohei Yoshida)
+- [@uk-ar](https://github.com/uk-ar) (Yuuki Arisawa)
+
+You can find a [full list of those people here](https://github.com/chrisbarrett/swift-mode/graphs/contributors).
 
 ## License
 
-See [COPYING][]. Copyright (c) 2014 Chris Barrett.
+See [COPYING][]. Copyright (c) 2014-2016 Chris Barrett, Bozhidar Batsov, Arthur Evstifeev.
 
 [badge-license]: https://img.shields.io/badge/license-GPL_3-green.svg
 [badge-travis]: https://travis-ci.org/chrisbarrett/swift-mode.png?branch=master
@@ -114,8 +119,8 @@ See [COPYING][]. Copyright (c) 2014 Chris Barrett.
 [swift]: https://developer.apple.com/swift/
 [cask]: https://github.com/cask/cask
 [rust-mode]: https://github.com/mozilla/rust/tree/master/src/etc/emacs
-[melpa]: http://melpa.milkbox.net
-[melpa stable]: http://melpa-stable.milkbox.net
+[melpa]: https://melpa.org
+[melpa stable]: https://stable.melpa.org
 [imenu]: http://www.gnu.org/software/emacs/manual/html_node/emacs/Imenu.html
 [flycheck]: http://flycheck.readthedocs.org/en/latest/
 [js-comint]: http://js-comint-el.sourceforge.net/

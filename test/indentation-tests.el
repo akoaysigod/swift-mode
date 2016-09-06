@@ -1,6 +1,6 @@
 ;;; indentation-tests.el --- Test swift-mode indentation behaviour
 
-;; Copyright (C) 2014 Chris Barrett
+;; Copyright (C) 2014-2016 Chris Barrett
 
 ;; Author: Chris Barrett <chris.d.barrett@me.com>
 ;; Version: 0.1
@@ -59,6 +59,7 @@ values of customisable variables."
               (swift-indent-offset 4)
               (swift-indent-switch-case-offset 0)
               (swift-indent-multiline-statement-offset 2)
+              (swift-indent-hanging-comma-offset nil)
               ,@var-bindings)
          (with-temp-buffer
            (insert ,before)
@@ -66,10 +67,25 @@ values of customisable variables."
            (search-forward "|")
            (delete-char -1)
            (swift-mode)
+           (setq smie-forward-token-function 'swift-smie--forward-token-debug)
+           (setq smie-backward-token-function 'swift-smie--backward-token-debug)
            (indent-according-to-mode)
 
            (should (equal expected-state (buffer-string)))
-           (should (equal expected-cursor-pos (point))))))))
+           (should (equal expected-cursor-pos (point)))
+
+           (goto-char (point-min))
+           (forward-sexp 10)
+           (should (equal (point-max) (point)))
+           (forward-sexp -10)
+           (should (equal (point-min) (point)))
+
+           (goto-char (point-min))
+           (forward-list 10)
+           (should (equal (point-max) (point)))
+           (forward-list -10)
+           (should (equal (point-min) (point)))
+           )))))
 
 ;; Provide font locking for easier test editing.
 
@@ -215,22 +231,22 @@ if foo {
 (check-indentation indents-case-statements-to-same-level-as-enclosing-switch/1
   "
 switch true {
-    |case
+    |case foo:
 }
 " "
 switch true {
-|case
+|case foo:
 }
 ")
 
 (check-indentation indents-case-statements-to-same-level-as-enclosing-switch/2
   "
 switch true {
-          |case
+          |case foo:
 }
 " "
 switch true {
-|case
+|case foo:
 }
 ")
 
@@ -238,13 +254,13 @@ switch true {
   "
 {
     switch true {
-|case
+|case foo:
     }
 }
 " "
 {
     switch true {
-    |case
+    |case foo:
     }
 }
 ")
@@ -253,13 +269,13 @@ switch true {
   "
 {
     switch true {
-              |case
+              |case foo:
     }
 }
 " "
 {
     switch true {
-    |case
+    |case foo:
     }
 }
 ")
@@ -291,6 +307,23 @@ switch {
 |case
     foo, bar, buz:
     foo
+}
+")
+
+(check-indentation indents-case-statements-to-same-level-as-enclosing-switch/7
+                   "
+switch {
+case foo:
+    foo
+    bar
+  |case baz:
+}
+" "
+switch {
+case foo:
+    foo
+    bar
+|case baz:
 }
 ")
 
@@ -417,6 +450,27 @@ case y:
 }
 ")
 
+(check-indentation indents-default-statements-to-same-level-as-enclosing-switch/3
+                   "
+{
+    switch true {
+    case y:
+        x
+    default:
+        foo
+        |}
+}
+" "
+{
+    switch true {
+    case y:
+        x
+    default:
+        foo
+    |}
+}
+")
+
 (check-indentation indents-statements-under-default-case/1
   "
 {
@@ -490,6 +544,20 @@ case foo where bar,
 }
 ")
 
+(check-indentation indents-case-statements-with-multiline-guard-custom-offset/1
+                   "
+switch true {
+case foo where bar,
+|bar where baz:
+}
+" "
+switch true {
+case foo where bar,
+   |bar where baz:
+}
+"
+((swift-indent-hanging-comma-offset 3)))
+
 (check-indentation indents-case-statements-with-multiline-guard/2
   "
 switch true {
@@ -509,11 +577,11 @@ case foo where bar,
 (check-indentation indents-case-statements-to-user-defined-offset/1
   "
 switch true {
-    |case
+    |case foo:
 }
 " "
 switch true {
-  |case
+  |case foo:
 }
 "
 ((swift-indent-switch-case-offset 2)))
@@ -521,11 +589,11 @@ switch true {
 (check-indentation indents-case-statements-to-user-defined-offset/2
   "
 switch true {
-          |case
+          |default:
 }
 " "
 switch true {
-  |case
+  |default:
 }
 "
 ((swift-indent-switch-case-offset 2)))
@@ -632,6 +700,17 @@ import Foo
 |import Bar
 ")
 
+(check-indentation indents-import-statements/2
+  "
+import Darwin
+    |class Test {
+}
+" "
+import Darwin
+|class Test {
+}
+")
+
 (check-indentation indents-class-declaration/1
   "
 class Foo {
@@ -685,9 +764,21 @@ class Foo: Foo, Bar,
 }
 " "
 class Foo: Foo, Bar,
-    |Baz {
+      |Baz {
 }
 ")
+
+(check-indentation indents-class-declaration-custom-offset/1
+                   "
+class Foo: Foo, Bar,
+|Baz {
+}
+" "
+class Foo: Foo, Bar,
+   |Baz {
+}
+"
+((swift-indent-hanging-comma-offset 3)))
 
 (check-indentation indents-class-declaration/6
                    "
@@ -709,13 +800,43 @@ class Foo: Bar<A, B,
                |C>
 ")
 
-(check-indentation indents-class-declaration/9
+(check-indentation indents-class-declaration/8
                    "
 class Foo<A: B<C>>:
                    |Bar
 " "
 class Foo<A: B<C>>:
     |Bar
+")
+
+(check-indentation indents-class-declaration/9
+                   "
+class Foo: Foo,
+      Bar,
+      Bar2,
+         |Baz {
+}
+" "
+class Foo: Foo,
+      Bar,
+      Bar2,
+      |Baz {
+}
+")
+
+(check-indentation indents-class-declaration/10
+                   "
+class Foo: Foo,
+      Bar,
+      Bar2,
+      Baz {
+  |}
+" "
+class Foo: Foo,
+      Bar,
+      Bar2,
+      Baz {
+|}
 ")
 
 (check-indentation indents-public-class-declaration/1
@@ -725,9 +846,21 @@ public class Foo: Foo, Bar,
 }
 " "
 public class Foo: Foo, Bar,
-    |Baz {
+             |Baz {
 }
 ")
+
+(check-indentation indents-public-class-declaration-custom-offset/1
+                   "
+public class Foo: Foo, Bar,
+|Baz {
+}
+" "
+public class Foo: Foo, Bar,
+   |Baz {
+}
+"
+((swift-indent-hanging-comma-offset 3)))
 
 (check-indentation indents-public-class-declaration/2
   "
@@ -736,6 +869,30 @@ public class Foo {
 }
 " "
 public class Foo {
+    |foo
+}
+")
+
+(check-indentation indents-public-class-declaration/3
+                   "
+public class Foo: Foo, Bar,
+             Baz {
+  |}
+" "
+public class Foo: Foo, Bar,
+             Baz {
+|}
+")
+
+(check-indentation indents-public-class-declaration/4
+                   "
+public class Foo: Foo, Bar,
+             Baz {
+|foo
+}
+" "
+public class Foo: Foo, Bar,
+             Baz {
     |foo
 }
 ")
@@ -1037,10 +1194,10 @@ let foo = [
 (check-indentation indents-declaration/12
   "
 let foo = [
-|[
+|[]]
 " "
 let foo = [
-    |[
+    |[]]
 ")
 
 (check-indentation indents-declaration/13
@@ -1200,7 +1357,7 @@ foo?[bar] +
      |a
 " "
 foo?[bar] +
-     |a
+  |a
 ")
 
 (check-indentation indents-multiline-expressions/10
@@ -1209,7 +1366,7 @@ foo?(bar) +
      |a
 " "
 foo?(bar) +
-     |a
+  |a
 ")
 
 (check-indentation indents-multiline-expressions/11
@@ -1217,10 +1374,12 @@ foo?(bar) +
 func a () {
     a +
 |a
+}
 " "
 func a () {
     a +
       |a
+}
 ")
 
 (check-indentation indents-multiline-expressions/12
@@ -1228,19 +1387,21 @@ func a () {
 func a () {
     a
 |.a()
+}
 " "
 func a () {
     a
       |.a()
+}
 ")
 
 (check-indentation indents-multiline-expressions/13
                    "
 if (a
-|.b)
+|.b){}
 " "
 if (a
-     |.b)
+     |.b){}
 ")
 
 (check-indentation indents-multiline-expressions/14
@@ -1345,6 +1506,19 @@ let x = bar
 let x = bar
         .buz() ??
         |defaultValue
+")
+
+(check-indentation indents-multiline-expressions/24
+  "
+let foo =
+    bar +
+  |baz +
+    a
+" "
+let foo =
+    bar +
+    |baz +
+    a
 ")
 
 (check-indentation indents-long-parameters/1
@@ -1458,7 +1632,7 @@ let options = NSRegularExpressionOptions.CaseInsensitive &
 |NSRegularExpressionOptions.DotMatchesLineSeparators
 " "
 let options = NSRegularExpressionOptions.CaseInsensitive &
-                |NSRegularExpressionOptions.DotMatchesLineSeparators
+              |NSRegularExpressionOptions.DotMatchesLineSeparators
 "
 ((swift-indent-multiline-statement-offset 4)))
 
@@ -1502,7 +1676,7 @@ let foo = bar >
           |baz
 ")
 
-(check-indentation indents-multiline-operators-only-once
+(check-indentation indents-multiline-operators-only-once/1
                    "
 1 +
   2 + 5 *
@@ -1510,6 +1684,18 @@ let foo = bar >
 " "
 1 +
   2 + 5 *
+      |3
+"
+)
+
+(check-indentation indents-multiline-operators-only-once/2
+                   "
+1 +
+  2 * 5 +
+|3
+" "
+1 +
+  2 * 5 +
   |3
 "
 )
@@ -1648,6 +1834,19 @@ func foo() {
            OrderViewTableDeliveryCells.lastCellIndex.rawValue :
            |OrderViewTableTakeAwayCells.lastCellIndex.rawValue
 }
+")
+
+(check-indentation conditional-operator/11
+                   "
+let a = a ? a +
+              1
+        |: a +
+              1
+" "
+let a = a ? a +
+              1
+          |: a +
+              1
 ")
 
 (check-indentation blank-line/1
@@ -1904,12 +2103,12 @@ foo.bar(10,
 foo.bar(10,
         completionHandler: { (bar, baz) -> Void in
         |foo
-        }
+        })
 " "
 foo.bar(10,
         completionHandler: { (bar, baz) -> Void in
             |foo
-        }
+        })
 ")
 
 (check-indentation anonymous-function-as-a-argument/9
